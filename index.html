@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+
+<title>chess</title>
+
+<link rel="stylesheet" type="text/css" href="static/chessboard.min.css">
+
+<script src="static/jquery.min.js"></script>
+<script src="static/chessboard.min.js"></script>
+
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .container {
+    text-align: center;
+    display: flex;
+    gap: 20px;
+  }
+  .moves-container {
+    width: 200px;
+    height: 600px;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+    padding: 10px;
+    text-align: left;
+  }
+  .move-item {
+    margin: 5px 0;
+    font-size: 16px;
+  }
+</style>
+
+</head>
+<body style="font-size: 20px;">
+
+<div class="container">
+  <div>
+    <a href="/selfplay">Play vs itself</a>
+    <button onclick="newGame()">new game</button><br/>
+    <div id="board" style="width: 600px"></div>
+    <p></p>
+  </div>
+  <div class="moves-container" id="moves"></div>
+</div>
+
+<script type="text/javascript">
+
+var board = ChessBoard('board', {
+  position: 'start',
+  draggable: true,
+  onDrop: onDrop
+});
+
+var files = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7};
+function get_square(sq) {
+  return 8*(parseInt(sq.charAt(1)) - 1) + files[sq.charAt(0)];
+}
+
+function addMove(source, target, piece) {
+  const movesDiv = document.getElementById('moves');
+  const moveDiv = document.createElement('div');
+  moveDiv.className = 'move-item';
+  moveDiv.textContent = `${piece} ${source} → ${target}`;
+  movesDiv.appendChild(moveDiv);
+  movesDiv.scrollTop = movesDiv.scrollHeight;
+}
+
+function onDrop(source, target, piece) {
+  if(source == target) return
+
+  var promotion = piece.toLowerCase().charAt(1) == 'p' && parseInt(target.charAt(1)) == 8;
+
+  $.get('/move_coordinates', {'from': get_square(source), 'to': get_square(target), 'promotion': promotion}, function(r) {
+    if (r.includes("game over")) {
+      document.querySelector('p').innerText = 'game over';
+    } else {
+      document.querySelector('p').innerText = '';
+      board.position(r);
+      addMove(source, target, piece);
+    }
+  });
+}
+
+function newGame() {
+  $.get('/newgame', function(r) {
+    document.querySelector('p').innerText = '';
+    board.position(r);
+    document.getElementById('moves').innerHTML = '';
+  });
+}
+</script>
+
+</body>
+</html>
